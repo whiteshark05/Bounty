@@ -77,7 +77,7 @@ contract Bounty {
     }
     
     // Get ProblemSetterAddress
-     function getProblemSetterAddress(uint id_) public view
+    function getProblemSetterAddress(uint id_) public view
         returns (address setterAddress_)
     {
         setterAddress_ = problems[id_].setterAddress;
@@ -212,4 +212,21 @@ contract Bounty {
         isCorrect = solutions[solutionID_].isCorrect;
     }
 
+    // Get ProblemSetterAddress
+    function getProblemSolverAddress(uint solutionID_) external view
+        returns (address solverAddress_)
+    {
+        solverAddress_ = solutions[solutionID_].solverAddress;
+    }
+
+    function transferRewards(uint problemID_, uint amount_, uint solutionID_) public payable
+    {
+        // compute new priceTag
+        require(amount_ <= problems[problemID_].priceTag, "Insufficient fund");
+        address receiver = this.getProblemSolverAddress(solutionID_);
+        require(receiver!=0,"Invalid Solution ID");
+        problems[problemID_].priceTag -= amount_;
+        // send money to the receiver
+        receiver.transfer(amount_);
+    }   
 }

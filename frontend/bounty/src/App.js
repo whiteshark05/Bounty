@@ -3,9 +3,13 @@ import logo from './logo.svg';
 import './App.css';
 import{bountyContract,accounts} from './EthereumSetup'
 import { BrowserRouter, Route, Link, Switch } from "react-router-dom";
-import { cpus } from 'os';
 import {Form, Field} from 'simple-react-forms';
 import Web3 from 'web3';
+import {DisplayAllProblems} from './Components/DisplayAllProblems.js'
+import {DisplayAllSolutions} from './Components/DisplayAllSolutions.js'
+import {DisplayUserInfo} from './Components/DisplayUserInfo.js'
+import {SendRewards} from './Components/SendRewards.js'
+
 const web3=new Web3(new Web3.providers.HttpProvider("http://localhost:7545"));
 
 class App extends Component {
@@ -48,7 +52,7 @@ const MainRouter = () => (
     <Switch>
       <Route exact path='/' component={Home}/>
       <Route path='/problem' component={ProblemRouter}/>
-      <Route path='/user' component={User}/>
+      <Route path='/user' component={User}/>}/>
     </Switch>
   </main>
 )
@@ -86,6 +90,7 @@ class ProblemSet extends Component {
       output:null,
       isCorrect:null,
     },
+    solutionIDs:null,
     solutions:[],
     accountID:0,
     account: 
@@ -99,20 +104,16 @@ class ProblemSet extends Component {
     let count = bountyContract.getProblemCount().toNumber() 
     let address = accounts[this.state.accountID];
     let balance = web3.eth.getBalance(address).toNumber()/Math.pow(10,18)
-    this.setState(Object.assign({},this.state,{problemCount:count, account: { address: address, balance: balance}}));
+    this.setState(Object.assign({},this.state,{problemCount:count, account: { address: address, balance: balance}}),() => console.log(this.state.account));
   }
 
   onClickGet = (index) => {
     let count= bountyContract.getProblemCount().toNumber() 
     let p = bountyContract.getProblem(index);
-    //console.log("before", this.state.index);
-    //console.log("Problem", p);
     let sID = bountyContract.getSolutionIDsByProblemID(index).map(i => i.toNumber())
-    //console.log("SolutionIDs", sID);
     let solutions = [];
     sID.forEach(i => {
       let s = bountyContract.getSolutionBySolutionID(i);
-      //console.log(s);
       let o = 
       {
         solverAddress: s[0],
@@ -123,7 +124,6 @@ class ProblemSet extends Component {
       };
       solutions.push(o);
     })
-    //console.log(solutions);
 
     this.setState(Object.assign({},this.state,
       {
@@ -138,10 +138,10 @@ class ProblemSet extends Component {
         priceTag: p[5].toNumber()/Math.pow(10,18),
         isActive: p[6],
         },
+        solutionIDs: sID,
         solutions: solutions,
       }
   ))
-    //console.log("after", this.state.problemCount);
   } 
 
   onClickCreate = () => {
@@ -152,10 +152,10 @@ class ProblemSet extends Component {
 
   onClickNext = () => {
     let count= bountyContract.getProblemCount().toNumber() 
-    console.log("Index", this.state.index)
+    //console.log("Index", this.state.index)
     let index = this.state.index;
     let nextIndex = 0;
-    if (index == count-1)
+    if (index === count-1)
       nextIndex = count-1;
     else
       nextIndex = index+1;
@@ -165,7 +165,7 @@ class ProblemSet extends Component {
   onClickPrev = () => {
     let index = this.state.index;
     let nextIndex = 0;
-    if (index==0)
+    if (index === 0)
       nextIndex=0;
     else
       nextIndex=index-1;
@@ -203,9 +203,8 @@ class ProblemSet extends Component {
         </div>
         <div>
           <Link to='/problem/new'><button>New Problem</button></Link>
-          <DisplayAllSolutions solutions = {this.state.solutions}/>
+          <DisplayAllSolutions solutions = {this.state.solutions} solutionIDs = {this.state.solutionIDs}/>
           <CreateSolution problemID = {this.state.index}/>
-          <DisplayUserInfo account = {this.state.account} accountID = {this.state.accountID}/>
         </div>
         <div>
         
@@ -215,74 +214,130 @@ class ProblemSet extends Component {
   }
 }
 
-const DisplayUserInfo = props => {
+
+
+class User extends Component {
+  state = {
+    index:null,
+    problemCount:null,
+    problem:{
+    setterAddress:"",
+    name:"",
+    description:"",
+    input:null,
+    output:null,
+    priceTag:null,
+    isActive:true
+    },
+    problems:[],
+
+    solutionIDs:[],
+    solutionCount:null,
+    solution:{
+      solverAddress:"",
+      problemID:null,
+      content:"",
+      output:null,
+      isCorrect:null,
+    },
+    solutions:[],
+
+    accountID:0,
+    account: 
+    {
+      address:null,
+      balance:null,
+    },
+  }
+
+  componentDidMount(){
+    let count = bountyContract.getProblemCount().toNumber() 
+    let address = accounts[this.state.accountID];
+    let balance = web3.eth.getBalance(address).toNumber()/Math.pow(10,18)
+    var a=[];
+    for (let i=0; i<count; i++){
+      if(bountyContract.getProblemSetterAddress(i)===address)
+      a.push(i);
+    }
+    this.setState({...this.state,problems:a})
+    this.setState(Object.assign({},this.state,{problemCount:count, problems:a, account: { address: address, balance: balance}}),() => console.log(this.state));
+  }
+  
+  onClickGet = (index) => {
+    let count= bountyContract.getProblemCount().toNumber() 
+    let p = bountyContract.getProblem(index);
+    let sID = bountyContract.getSolutionIDsByProblemID(index).map(i => i.toNumber())
+    let solutions = [];
+    sID.forEach(i => {
+      let s = bountyContract.getSolutionBySolutionID(i);
+      let o = 
+      {
+        solverAddress: s[0],
+        problemID: s[1].toNumber(),
+        content: s[2],
+        output: s[3],
+        isCorrect: s[4],
+      };
+      solutions.push(o);
+    })
+    console.log(sID);
+    this.setState(Object.assign({},this.state,
+      {
+        problemCount: count,
+        index: index,
+        problem:{
+        setterAddress: p[0],
+        name: p[1],
+        description: p[2],
+        input: p[3],
+        output: p[4],
+        priceTag: p[5].toNumber()/Math.pow(10,18),
+        isActive: p[6],
+        },
+        solutionIDs: sID,
+        solutions: solutions,
+      }
+    ))
+    
+  } 
+
+
+  display = (index) => {
+    this.onClickGet(index);
+  }
+
+  transfer = (amount,solutionID) => {
+    console.log("USer", this.state.index, amount, solutionID)
+    bountyContract.transferRewards(this.state.index, amount, solutionID)
+    this.onClickGet(this.state.index);
+    this.accountLogger();
+  }
+
+  accountLogger = () => {
+    for(let i=0; i<10; i++) 
+      console.log(`account ${i}:`,web3.eth.getBalance(accounts[i]).toNumber()/Math.pow(10,18))
+    
+  }
+  render() {
   return (
-    <div className = "user-info-table">
-    <h3>Account information</h3>
-    <table className = 'center'>
-      <tbody>
-        <tr>
-          <th>Account ID</th>
-          <td>{props.accountID}</td>
-        </tr>
-        <tr>
-          <th>Address</th>
-          <td>{props.account.address}</td>
-        </tr>
-        <tr>
-          <th>Balance(Eth)</th>
-          <td>{props.account.balance}</td>
-        </tr>
-      </tbody>
-    </table>
+    <div>
+      <div>
+        <DisplayUserInfo account = {this.state.account} accountID = {this.state.accountID}/>
+      </div>
+      <div>
+        <h3>All Problems Created By This Account</h3>
+        {this.state.problems.map((i,key) => <button key={key} onClick={()=>this.display(i)}>{i}</button>)}
+      </div>
+      <div>
+        <DisplayAllProblems problem={this.state.problem} index={this.state.index} problemCount={this.state.problemCount}/>
+      </div>
+      <div>
+        <SendRewards transfer = {this.transfer} problem = {this.state.problem} solutions = {this.state.solutions} solutionIDs = {this.state.solutionIDs}/>
+      </div>
     </div>
+
   )
-}
-
-const User = () => (
-  <h2>Display All Problems and Solutions created by this Address</h2>
-)
-
-
-const DisplayAllProblems = props => {
-  return (
-    <table className="center">
-      <tbody>
-        <tr>
-          <th>Total Problems</th>
-          <td>{props.problemCount}</td>
-        </tr>
-        <tr>
-          <th>Problem ID</th>
-          <td>{props.index}</td>
-        </tr>
-        <tr>
-          <th>Problem Setter Address</th>
-          <td>{props.problem.setterAddress}</td>
-        </tr>
-        <tr>
-          <th>Tittle</th>
-          <td>{props.problem.name}</td>
-        </tr>
-        <tr>
-          <th>Description</th>
-          <td>{props.problem.description}</td>
-        </tr>
-        <tr>
-          <th>Input</th>
-          <td>{props.problem.input}</td>
-        </tr>
-        <tr>
-          <th>Output</th>
-          <td>{props.problem.output}</td>
-        </tr>
-        <tr>
-          <th>Price Tag(Eth)</th>
-          <td>{props.problem.priceTag}</td>
-        </tr>
-      </tbody>
-    </table>
-  )
+  }
 }
 
 class PForm extends Component {
@@ -295,7 +350,7 @@ class PForm extends Component {
     let description = obj.description;
     let input = obj.input;
     let output = obj.output;
-    let priceTag = obj.priceTag;
+    let priceTag = obj.priceTag*Math.pow(10,18);
     bountyContract.createProblem(name, description, input, output, {from:setterAddress, value:priceTag, gas:3000000})
   }
 
@@ -330,7 +385,7 @@ class PForm extends Component {
           />  
           <Field
             name='priceTag'
-            label='Price Tag (Wei)'
+            label='Price Tag (Eth)'
             type='text'
           />
       </Form>
@@ -343,35 +398,6 @@ class PForm extends Component {
 }
 
 
-const DisplayAllSolutions = props => {
-  return (
-    <div>
-      <h3>Solutions</h3>
-      {props.solutions.slice(0).reverse().map((i,key) => {
-        return (
-          <div key={key}>
-            <table className = 'center'>
-              <tbody>
-                <tr>
-                  <th>Problem ID</th>
-                  <td>{i.problemID}</td>
-                </tr>
-                  <tr>
-                    <th>solverAddress</th>
-                    <td>{i.solverAddress}</td>
-                  </tr>
-                  <tr>
-                    <th>Content</th>
-                    <td>{i.content}</td>
-                  </tr>
-              </tbody>
-            </table>
-          </div>
-        )
-      })}
-    </div>
-  )
-}
 
 
 class CreateSolution extends Component {
@@ -384,6 +410,7 @@ class CreateSolution extends Component {
     bountyContract.createSolution(problemID,content,output,{from:accounts[2],gas:3000000});
   }
 
+  
   render() {
     return (
       <div className = 'pform'>
@@ -393,7 +420,7 @@ class CreateSolution extends Component {
           name='content'
           label= 'New Solution' 
           type='text'
-          />
+          /> 
         </Form>
         <Link to='/problem'><button onClick={this.onClickCreateSolution}>Submit</button></Link>
       </div>

@@ -1,0 +1,28 @@
+strict digraph {
+  constructor [color=brown]
+  fallback [color=brown]
+  getOwner [color=yellow]
+  greet [color=green]
+  createProblem [color=brown]
+  push
+  getProblemCount [color=yellow]
+  getProblemSetterAddress [color=yellow]
+  getProblem [color=yellow]
+  updateProblemName
+  updateProblemDescription
+  updateProblemInput
+  updateProblemOutput
+  updateProblemPriceTag [color=brown]
+  removeProblem [color=purple]
+  transfer
+  createSolution
+  getSolutionCount [color=yellow]
+  getSolutionIDsByProblemID [color=yellow]
+  getSolutionBySolutionID [color=yellow]
+  transferRewards [color=purple]
+  createProblem -> push
+  removeProblem -> transfer
+  createSolution -> push
+  transferRewards -> transfer
+}
+

@@ -9,10 +9,7 @@ import Web3 from 'web3';
 //     console.log(bountyABI);
 // });
 
- 
-const web3=new Web3(new Web3.providers.HttpProvider("http://localhost:7545"));
-//console.log(bountyJSON)
-const bountyABI=[
+const bountyABI = [
   {
     "inputs": [],
     "payable": true,
@@ -343,9 +340,53 @@ const bountyABI=[
     "payable": false,
     "stateMutability": "view",
     "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [
+      {
+        "name": "solutionID_",
+        "type": "uint256"
+      }
+    ],
+    "name": "getProblemSolverAddress",
+    "outputs": [
+      {
+        "name": "solverAddress_",
+        "type": "address"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "name": "problemID_",
+        "type": "uint256"
+      },
+      {
+        "name": "amount_",
+        "type": "uint256"
+      },
+      {
+        "name": "solutionID_",
+        "type": "uint256"
+      }
+    ],
+    "name": "transferRewards",
+    "outputs": [],
+    "payable": true,
+    "stateMutability": "payable",
+    "type": "function"
   }
 ]
-let bountyAddress="0x5e8121c4d225ab3834acc413a587212b82b4be1c";
+const web3=new Web3(new Web3.providers.HttpProvider("http://localhost:7545"));
+//console.log(bountyJSON)
+
+let bountyAddress='0x14747acf60327005708db7a34b54082d54900c22';
 
 web3.eth.defaultAccount = web3.eth.accounts[0]
 const bountyContract=web3.eth.contract(bountyABI).at(bountyAddress);
